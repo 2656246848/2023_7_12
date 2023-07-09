@@ -54,22 +54,21 @@ void TIM2_Init(float Freq, float Period)
 interrupt void TIM2_IRQn(void)
 {
     EALLOW;
-    LED2_TOGGLE;
- //   ConfigCpuTimer(&CpuTimer2, 150, sampling_T);
-//    interrupt_count++;
-//    if (interrupt_count>60000)
-//    {
-//        interrupt_count=0;
-//    }
-
     Get_speed(&speed_pid, &qep_posspeed);
+    Get_speed(&speed_pid2, &qep_posspeed2);
     PID_Calc(&speed_pid);
+    PID_Calc(&speed_pid2);
 
-
-    if (speed_pid.OUT<10000)//限制最大占空比
+    if (speed_pid.OUT<SP*2/3)//限制最大占空比
     {
         va += speed_pid.OUT;
     }
+    if (speed_pid2.OUT<SP*2/3)//限制最大占空比
+   {
+      va2 += speed_pid2.OUT;
+  }
+    EPwm1B_SetCompare(va2);//IO1
+    EPwm1A_SetCompare(va);//IO0
     CpuTimer2Regs.TCR.bit.TSS=0;//启动定时器
     EDIS;
 }

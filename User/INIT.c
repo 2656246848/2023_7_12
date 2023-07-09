@@ -16,11 +16,15 @@ void SYSTERM_INIT()
     IFR = 0x0000;
     InitPieVectTable();
     LED_Init();
-    EXTI_Init();
+    //EXTI_Init();
     OLED_Init();
     OLED_Clear();
     EQEP1_Init();
-    UARTa_Init(9600);
-    TIM2_Init(150,sampling_T);
+    UARTa_Init(115200);
+    UARTb_Init(115200);
+    TIM1_Init(150, 999);//1ms进一次中断
+    TIM2_Init(150,sampling_T*1.2-1);
     PID_Init(&speed_pid);
+    PID2_Init(&speed_pid2);
+    WatchDog_init();
 }

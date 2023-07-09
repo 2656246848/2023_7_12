@@ -1,14 +1,7 @@
-/*
- * uart.c
- *
- *  Created on: 2023年5月27日
- *      Author: gy
- */
-
-
 #include "uart.h"
 #include "stdio.h"
 #include "string.h"
+#include "leds.h"
 /*
     * @name   fputc,fputs
     * @brief  串口打印重定向
@@ -16,6 +9,15 @@
     * @retval None
     * 实现了s%,d%的打印
 */
+
+__interrupt void seriblRxISR(void);
+// 定义接收缓冲区
+volatile Uint16 rxBuffer[BUFFER_SIZE];
+Uint16 rdataA[8];    // Received data for SCI-A
+Uint16 rdataB[8];    // Received data for SCI-A
+volatile Uint16 r_value,l_value,r_x,l_x;
+
+
 int fputc(int ch,FILE *fp)
 {
     while(SciaRegs.SCICTL2.bit.TXRDY == 0);
@@ -34,19 +36,6 @@ int fputs(const char *_ptr,FILE *_fp)
         SciaRegs.SCITXBUF= (unsigned char)(_ptr[i]);
     }
     return len;
-}
-
-
-/*
-    * @name   SCIa_SendByte
-    * @brief  SCIA发送字符
-    * @param  dat -> 待发送字符
-    * @retval None
-*/
-void SCIa_SendByte(int dat)
-{
-    while (SciaRegs.SCIFFTX.bit.TXFFST != 0);
-    SciaRegs.SCITXBUF = dat;
 }
 
 void UARTa_Init(Uint32 baud)
@@ -68,27 +57,89 @@ void UARTa_Init(Uint32 baud)
     InitSciaGpio();
 
     //Initalize the SCI FIFO
-    SciaRegs.SCIFFTX.all=0xE040;//不使能中断，清除中断标志位，清空FIFO数据，重置SCI的接收和发送通道
-    SciaRegs.SCIFFRX.all=0x204f; //
-    SciaRegs.SCIFFCT.all=0x0;
+    SciaRegs.SCIFFTX.all=0xE040;//不使能中断(第5位)，清除中断标志位(第6位)，清空FIFO数据(第13位)，使用FIFO(第14位)，SCI FIFO可以恢复接受或发送(第15位);
+                                //FIFO的数据个数为0(第8~12位);FIFO的数据个数<=0产生中断(0~4位)
+    SciaRegs.SCIFFRX.all=0x204f; //不使能中断(第5位)，清除中断标志位(第6位)，清除RXFFOVF(接收溢出)标志位(第14位)，复位FIFO指针(第13位)
+                                 //FIFO的数据个数为0(第8~12位);FIFO的数据个数>=15产生中断(0~4位)
+    SciaRegs.SCIFFCT.all=0x0;//不使用FIFO传输延时
 
     // Note: Clocks were turned on to the SCIA peripheral
     // in the InitSysCtrl() function
-    SciaRegs.SCICCR.all =0x0007;   // 1 stop bit,  No loopback
-                                   // No parity,8 char bits,
-                                   // async mode, idle-line protocol
-    SciaRegs.SCICTL1.all =0x0003;  // enable TX, RX, internal SCICLK,
-                                   // Disable RX ERR, SLEEP, TXWAKE
-    SciaRegs.SCICTL2.all =0x0003;
-    SciaRegs.SCICTL2.bit.TXINTENA =1;
-    SciaRegs.SCICTL2.bit.RXBKINTENA =1;
-    SciaRegs.SCIHBAUD    =scihbaud;  // 9600 baud @LSPCLK = 37.5MHz.
+    SciaRegs.SCICCR.all =0x0007;   // 1 stop bit(第7位),  No loopback(第4位)， No parity(无奇偶校验)(第5位),
+                                    //8 char bits(0~2位),async mode, idle-line protocol(第3位)(传输模式选择：空闲线模式)
+    SciaRegs.SCICTL1.all =0x0003;  // enable TX(第0位), RX(第1位), internal SCICLK,
+                                   // Disable RX ERR, SLEEP(第2位), TXWAKE(第3位)(传输特性选择)
+    SciaRegs.SCICTL2.all =0x0003;//等效下面两行
+    //SciaRegs.SCICTL2.bit.TXINTENA =1;//发送缓冲区(SCITFBUF)中断(TXRDY flag)
+    //SciaRegs.SCICTL2.bit.RXBKINTENA =1;//启用接收缓冲区中断(RXRDY flag和 RKDT flag)
+    SciaRegs.SCIHBAUD    =scihbaud;  // 115200 baud @LSPCLK = 37.5MHz.
     SciaRegs.SCILBAUD    =scilbaud;
-//  SciaRegs.SCICCR.bit.LOOPBKENA =1; // Enable loop back
+//  SciaRegs.SCICCR.bit.LOOPBKENA =1; // Enable loop back,回环测试模式
     SciaRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset 开始通信，禁用了睡眠模式和接收错误中断，但启用了SCI模块的发送中断和接收中断
 
 }
 
+void UARTb_Init(Uint32 baud)
+{
+    unsigned char scihbaud=0;
+    unsigned char scilbaud=0;
+    Uint16 scibaud=0;
+
+    //根据函数参数baud设置的波特率计算存储波特率生成器的高8位和低8位
+    scibaud=37500000/(8*baud)-1;//通信时钟37.5MHZ
+    scihbaud=scibaud>>8;
+    scilbaud=scibaud&0xff;
+
+
+    EALLOW;
+    SysCtrlRegs.PCLKCR0.bit.SCIBENCLK = 1;   // SCI-B
+    EDIS;
+
+    InitScibGpio();
+
+    //Initalize the SCI FIFO
+//    ScibRegs.SCIFFTX.all=0xE040;//不使能中断(第5位)，清除中断标志位，清空FIFO数据，重置SCI的接收和发送通道
+//    ScibRegs.SCIFFRX.all=0x204f; //
+    ScibRegs.SCIFFTX.all=0xC028;//使能中断，接收到8位数据(0~4位)产生中断
+    ScibRegs.SCIFFRX.all=0x0028;//使能中断，发送8位产生中断
+    ScibRegs.SCIFFCT.all=0x0;
+
+    // Note: Clocks were turned on to the SCIA peripheral
+    // in the InitSysCtrl() function
+    ScibRegs.SCICCR.all =0x0007;   // 1 stop bit,  No loopback
+                                   // No parity,8 char bits,
+                                   // async mode, idle-line protocol
+    ScibRegs.SCICTL1.all =0x0003;  // enable TX, RX, internal SCICLK,
+                                   // Disable RX ERR, SLEEP, TXWAKE
+    ScibRegs.SCICTL2.all =0x0003;
+    ScibRegs.SCICTL2.bit.TXINTENA =1;
+    ScibRegs.SCICTL2.bit.RXBKINTENA =1;
+    // 配置串口接收中断
+    EALLOW;
+    PieVectTable.SCIRXINTB = &seriblRxISR;
+//    PieVectTable.SCITXINTB = &scibTxFifoIsr;
+    EDIS;
+    PieCtrlRegs.PIEIER9.bit.INTx3=1;
+    IER |= M_INT9;
+    ScibRegs.SCIHBAUD    =scihbaud;  // 9600 baud @LSPCLK = 37.5MHz
+    ScibRegs.SCILBAUD    =scilbaud;
+//  SciaRegs.SCICCR.bit.LOOPBKENA =1; // Enable loop back
+    ScibRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset 开始通信，禁用了睡眠模式和接收错误中断，但启用了SCI模块的发送中断和接收中断
+    ScibRegs.SCIFFTX.bit.TXFIFOXRESET=1;
+    ScibRegs.SCIFFRX.bit.RXFIFORESET=1;
+}
+
+void SCIa_SendByte(int dat)
+{
+    while (SciaRegs.SCIFFTX.bit.TXFFST != 0);
+    SciaRegs.SCITXBUF = dat;
+}
+
+void SCIb_SendByte(int dat)
+{
+    while (ScibRegs.SCIFFTX.bit.TXFFST != 0);
+    ScibRegs.SCITXBUF = dat;
+}
 
 // Transmit a character from the SCI'
 void UARTa_SendByte(int a)
@@ -108,262 +159,65 @@ void UARTa_SendString(char * msg)
     }
 }
 
-
-
-//用于波特率自动识别测试
-#ifdef UART_AUTOBAUN_TEST
-
-#define BAUDSTEP 100            // Amount BRR will be incremented between each
-                                // autobaud lock
-
-Uint16 ReceivedCount;
-Uint16 ErrorCount;
-Uint16 SendChar;
-Uint16 ReceivedAChar;   // scia received character
-Uint16 ReceivedBChar;   // scib received character
-Uint16 BRRVal;
-Uint16 Buff[10] = {0x55, 0xAA, 0xF0, 0x0F, 0x00, 0xFF, 0xF5, 0x5F, 0xA5, 0x5A};
-
-
-void error(char n)
+void UARTb_SendByte(int a)
 {
-    ErrorCount++;
-    asm("     ESTOP0");            // Uncomment to stop the test here
-    for (;;);
-
-}
-
-// SCIA  8-bit word, baud rate 0x000F, default, 1 STOP bit, no parity
-void scia_init()
-{
-    // Note: Clocks were turned on to the SCIA peripheral
-    // in the InitSysCtrl() function
-
-    // Reset FIFO's
-    SciaRegs.SCIFFTX.all=0x8000;
-
-    SciaRegs.SCICCR.all =0x0007;   // 1 stop bit,  No loopback
-                                   // No parity,8 char bits,
-                                   // async mode, idle-line protocol
-    SciaRegs.SCICTL1.all =0x0003;  // enable TX, RX, internal SCICLK,
-                                   // Disable RX ERR, SLEEP, TXWAKE
-    SciaRegs.SCICTL2.all =0x0003;
-    SciaRegs.SCICTL2.bit.RXBKINTENA =1;
-    SciaRegs.SCICTL1.all =0x0023;     // Relinquish SCI from Reset
-
-
-}
-
-// SCIB  8-bit word, baud rate 0x000F, default, 1 STOP bit, no parity
-
-void scib_init()
-{
-    // Reset FIFO's
-    ScibRegs.SCIFFTX.all=0x8000;
-
-    // 1 stop bit, No parity, 8-bit character
-    // No loopback
-    ScibRegs.SCICCR.all = 0x0007;
-
-    // Enable TX, RX, Use internal SCICLK
-    ScibRegs.SCICTL1.all = 0x0003;
-
-    // Disable RxErr, Sleep, TX Wake,
-    // Diable Rx Interrupt, Tx Interrupt
-    ScibRegs.SCICTL2.all = 0x0000;
-
-    // Relinquish SCI-A from reset
-    ScibRegs.SCICTL1.all = 0x0023;
-
-}
-
-// Transmit a character from the SCI-A'
-void scia_xmit(int a)
-{
-    SciaRegs.SCITXBUF=a;
-}
-
-// Transmit a character from the SCI-B'
-void scib_xmit(int a)
-{
+    while (ScibRegs.SCIFFTX.bit.TXFFST != 0);
     ScibRegs.SCITXBUF=a;
 }
 
-//------------------------------------------------
-// Perform autobaud lock with the host.
-// Note that if autobaud never occurs
-// the program will hang in this routine as there
-// is no timeout mechanism included.
-//------------------------------------------------
-
-void scia_AutobaudLock()
+void UARTb_SendString(char * msg)
 {
+    int i=0;
 
-    SciaRegs.SCICTL1.bit.SWRESET = 0;
-    SciaRegs.SCICTL1.bit.SWRESET = 1;
-
-    // Must prime baud register with >= 1
-    SciaRegs.SCIHBAUD = 0;
-    SciaRegs.SCILBAUD = 1;
-
-    // Prepare for autobaud detection
-    // Make sure the ABD bit is clear by writing a 1 to ABDCLR
-    // Set the CDC bit to enable autobaud detection
-    SciaRegs.SCIFFCT.bit.ABDCLR = 1;
-    SciaRegs.SCIFFCT.bit.CDC = 1;
-
-    // Wait until we correctly read an
-    // 'A' or 'a' and lock
-    //
-    // As long as Autobaud calibration is enabled (CDC = 1),
-    // SCI-B (host) will continue transmitting 'A'. This will
-    // continue until interrupted by the SCI-A RX ISR, where
-    // SCI-A RXBUF receives 'A', autobaud-locks (ABDCLR=1
-    // CDC=0),and returns an 'A' back to the host. Then control
-    // is returned to this loop and the loop is exited.
-    //
-    // NOTE: ABD will become set sometime between
-    //       scib_xmit and the DELAY_US loop, and
-    //       the SCI-A RX ISR will be triggered.
-    //       Upon returning and reaching the if-statement,
-    //       ABD will have been cleared again by the ISR.
-
-    while(SciaRegs.SCIFFCT.bit.CDC== 1)
+    while(msg[i] != '\0')
     {
-       // Note the lower the baud rate the longer
-       // this delay has to be to allow the other end
-       // to echo back a character (about 4 characters long)
-       // Make this really long since we are going through all
-       // the baud rates.
-        DELAY_US(280000L);
-
-
-
-        if(SciaRegs.SCIFFCT.bit.CDC == 1)
-            scib_xmit('A');  // host transmits 'A'
-
+        UARTb_SendByte(msg[i]);
+        i++;
     }
-
-    return;
 }
 
-/* --------------------------------------------------- */
-/* ISR for PIE INT9.1                                  */
-/* Connected to RXAINT  SCI-A                          */
-/* ----------------------------------------------------*/
-
-interrupt void rxaint_isr(void)     // SCI-A
+__interrupt void seriblRxISR(void)
 {
-    // Insert ISR Code here
+    static Uint16 bufferIndex = 0;
+        static Uint16 Index2,Index3,Index4,Index5;
 
-    PieCtrlRegs.PIEACK.bit.ACK9 = 1;
-
-    // If autobaud detected, we must clear CDC
-    if(SciaRegs.SCIFFCT.bit.ABD == 1)
-    {
-        SciaRegs.SCIFFCT.bit.ABDCLR = 1;
-        SciaRegs.SCIFFCT.bit.CDC = 0;
-        // Check received character - should be 'A'
-        ReceivedAChar = 0;
-        ReceivedAChar = SciaRegs.SCIRXBUF.all;
-        if(ReceivedAChar != 'A')
+        // 读取接收数据
+        Uint16 receivedData = ScibRegs.SCIRXBUF.all;
+        if((bufferIndex==0&&receivedData==FRAME_HEADER_1)||
+                (bufferIndex==1&&receivedData==FRAME_HEADER_2)||
+                    (bufferIndex>=2&&bufferIndex<=5)||
+                        (bufferIndex==6 && receivedData==Index2*16+Index3+Index4-Index5)||
+                             (bufferIndex==7&&receivedData==FRAME_TAIL))
         {
-            error(2);
+            bufferIndex++;
         }
-      else scia_xmit(ReceivedAChar);
+        else{bufferIndex=0;r_value=0;l_value=0;}
+        if(bufferIndex==3)
+        {
+            Index2=receivedData;
+        }
+        if(bufferIndex==4)
+        {
+            Index3=receivedData;
+        }
+        if(bufferIndex==5)
+        {
+            Index4=receivedData;
+        }
+        if(bufferIndex==6)
+        {
+            Index5=receivedData;
+        }
+        if(bufferIndex==8&&receivedData==FRAME_TAIL)
+        {
+            l_value=Index2;
+            l_x=Index3;
+            r_value=Index4;
+            r_x=Index5;
+            bufferIndex=0;
+        }
+
+        ScibRegs.SCIFFRX.bit.RXFFINTCLR=1;//清除中断标志
+        // 清除中断标志
+        PieCtrlRegs.PIEACK.all |= PIEACK_GROUP9;
     }
-
-   // This was not autobaud detect
-   else
-   {
-      // Check received character against sendchar
-      ReceivedAChar = 0;
-      ReceivedAChar = SciaRegs.SCIRXBUF.all;
-      if(ReceivedAChar != SendChar)
-      {
-         error(3);
-      }
-      else scia_xmit(ReceivedAChar);
-   }
-
-   SciaRegs.SCIFFRX.bit.RXFFINTCLR = 1; // clear Receive interrupt flag
-   ReceivedCount++;
-}
-
-void UART_AutoBaud_Test(void)
-{
-    Uint16 i=0;
-
-    EALLOW;
-    SysCtrlRegs.PCLKCR0.bit.SCIAENCLK = 1;   // SCI-A
-    SysCtrlRegs.PCLKCR0.bit.SCIBENCLK = 1;   // SCI-B
-    EDIS;
-
-    InitSciaGpio();
-    InitScibGpio();
-
-    // Interrupts that are used in this example are re-mapped to
-    // ISR functions found within this file.
-    EALLOW;     // This is needed to write to EALLOW protected registers
-    PieVectTable.SCIRXINTA = &rxaint_isr;
-    EDIS;       // This is needed to disable write to EALLOW protected register
-
-    scia_init();       // Initalize SCIA
-    scib_init();       // Initalize SCIB
-
-    // Enable interrupts
-    PieCtrlRegs.PIEIER9.all = 0x0001; // Enable all SCIA RXINT interrupt
-    IER |= M_INT9;                   // enable PIEIER9, and INT9
-    EINT;
-
-    // Start with BRR = 1, work through each baud rate setting
-    // incrementing BRR by BAUDSTEP
-    for (BRRVal = 0x0000; BRRVal < (Uint32)0xFFFF; BRRVal+=BAUDSTEP)
-    {
-
-        // SCIB has a known baud rate.  SCIA will autobaud to match
-        ScibRegs.SCIHBAUD = (BRRVal >> 8);
-        ScibRegs.SCILBAUD = (BRRVal);
-
-        // Initiate an autobaud lock with scia.  Check
-        // returned character against baud lock character 'A'
-        scia_AutobaudLock();
-        while(ScibRegs.SCIRXST.bit.RXRDY != 1) { }
-        ReceivedBChar = 0;
-        ReceivedBChar =  ScibRegs.SCIRXBUF.bit.RXDT;
-        if(ReceivedBChar != 'A')
-        {
-            error(0);
-        }
-
-        // Send/echoback characters
-        // 55 AA F0 0F 00 FF F5 5F A5 5A
-        for(i= 0; i<=9; i++)
-        {
-          SendChar = Buff[i];
-          scib_xmit(SendChar);              // Initiate interrupts and xmit data in isr
-          // Wait to get the character back and check
-          // against the sent character.
-          while(ScibRegs.SCIRXST.bit.RXRDY != 1)
-          {
-              asm("   NOP");
-          }
-          ReceivedBChar = 0;
-          ReceivedBChar =  ScibRegs.SCIRXBUF.bit.RXDT;
-          if(ReceivedBChar != SendChar) error(1);
-        }
-
-    } // Repeat for next BRR setting
-
-    // Stop here, no more
-    while(1)
-    {
-        asm("    NOP");
-    }
-
-}
-
-
-#endif
-
-

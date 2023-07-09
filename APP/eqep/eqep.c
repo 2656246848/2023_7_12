@@ -8,19 +8,6 @@
 
 interrupt void prdTick(void);
 
-
-#if (CPU_FRQ_150MHZ)
-  #define CPU_CLK   150e6
-#endif
-#if (CPU_FRQ_100MHZ)
-  #define CPU_CLK   100e6
-#endif
-
-#define PWM_CLK   5e3              // 5kHz (300rpm) EPWM1 frequency. Freq. can be changed here
-#define SP        CPU_CLK/(2*PWM_CLK)       //上下计数模式下满足此式
-#define TBCTLVAL  0x200E           // up-down count, timebase=SYSCLKOUT
-
-
 void EPwm1Setup(void)
 {
     InitEPwm1Gpio();
@@ -60,7 +47,7 @@ void EPwm1Setup(void)
     EPwm1Regs.PCCTL.all=0;
 
     EPwm1Regs.TBCTL.all=0x0010+TBCTLVAL; // Enable Timer
-    EPwm1Regs.TBPRD=SP;
+    EPwm1Regs.TBPRD=SP;//SP=15000
 
     EALLOW;  // This is needed to write to EALLOW protected registers
     PieVectTable.EPWM1_INT= &prdTick;
@@ -82,7 +69,7 @@ void EQEP1_Init(void)
     EDIS;
 
     InitEQep1Gpio();
-
+    InitEQep2Gpio();
     EPwm1Setup();
 
     qep_posspeed.init(&qep_posspeed);         //init是结构体类型POSSPEED里的一个函数指针，qep_posspeed是一个POSSPEED类型的结构体，qep_posspeed的内容被初始化为POSSPEED_DEFAULTS，包括将void (*init)()初始化为(void (*)(long))POSSPEED_Init,所以这里是执行了POSSPEED_Init(&qep_posspeed)
@@ -101,7 +88,8 @@ void EPwm1B_SetCompare(Uint16 val)
 interrupt void prdTick(void)                  // EPWM1 Interrupts once every 4 QCLK counts (one period)
 {
     // Position and Speed measurement
-    qep_posspeed.calc(&qep_posspeed);
+    qep_posspeed.calc(&qep_posspeed,1);
+    qep_posspeed2.calc(&qep_posspeed2,2);
 
     // Acknowledge this interrupt to receive more interrupts from group 1
     PieCtrlRegs.PIEACK.all = PIEACK_GROUP3;

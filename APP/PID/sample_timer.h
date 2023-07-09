@@ -13,8 +13,8 @@
 #include "DSP2833x_Examples.h"   // DSP2833x 例子相关头文件
 #include "PID.h"
 
-extern Uint16 va;
-extern PID speed_pid;
+extern volatile Uint16 va;
+extern volatile Uint16 va2;
 
 void TIM2_Init(float Freq, float Period);
 interrupt void TIM2_IRQn(void);

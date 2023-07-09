@@ -11,8 +11,11 @@
 #include "DSP2833x_Device.h"     // DSP2833x Headerfile Include File
 #include "DSP2833x_Examples.h"
 #include "speed.h"
+#include "stdio.h"
 
-extern POSSPEED qep_posspeed;
+#define SP        CPU_CLK/(2*PWM_CLK)       //上下计数模式下满足此式
+#define PWM_CLK   5000             // (300rpm) EPWM1 frequency. Freq. can be changed here
+#define TBCTLVAL  0x200E           // up-down count, timebase=SYSCLKOUT
 
 void EQEP1_Init(void);
 void EPwm1Setup(void);

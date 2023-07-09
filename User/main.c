@@ -1,25 +1,11 @@
 #include "main.h"
 #include "INIT.h"
 
-Uint16 va = 0;
-
-void DELAY_MS(int b)
-{
-   int a;
-   while(b)
-   {
-
-          for(a=0;a<1000;a++)
-          {
-              DELAY_US(1);
-          }
-          b--;
-   }
-
-}
+volatile Uint16 va = 0;//(最大15000)
+volatile Uint16 va2 = 0;//(最大15000)
 
 void main()
-{
+ {
     #if RUN_TYPE==FLASH_RUN
         MemCopy(&RamfuncsLoadStart, &RamfuncsLoadEnd, &RamfuncsRunStart);
         InitFlash();
@@ -42,23 +28,27 @@ void main()
     #if RUN_TYPE==SRAM_RUN
         // 正常
         printf("Hello World\n");
-//        char buffer[] ="3.33";
-//        printf("%s\n",buffer);
-//        printf("%d\n",33);
-//
-
-        //printf("%d\n",qep_posspeed.DirectionQep);
-        //这样上位机就可以将两个数据分开制作波形
-        //printf("%.2d,%.2d\n",33,qep_posspeed.DirectionQep);//这里打印了多少个就是多少个通道，上位机会识别
 
     #endif
 
     while (1)
     {
-        printf("%d,%d,%d,%d,%d\n",(int)(speed_pid.pv),(int)(speed_pid.SEK),(int)speed_pid.sv,(int)speed_pid.OUT,va);
-
-        EPwm1B_SetCompare(va);//va范围0~15000
-        EPwm1A_SetCompare(va);
+        if(Timer_10ms_Task==1) //10ms扫描一次
+        {
+            Timer_10ms_Task=0;
+            //printf("%d,%d,%d,%d\n",(int)(speed_pid.pv),(int)speed_pid.sv,(int)speed_pid.OUT,va);
+            printf("%d,%d,%d,%d\n",(int)(speed_pid2.pv),(int)speed_pid2.sv,(int)speed_pid2.OUT,va2);
+        }
+        if(Timer_50ms_Task==1) //50ms扫描一次
+        {
+            Timer_50ms_Task=0;
+            ServiceDog();//喂狗，每279.62ms/4.37ms内要喂一次，否则进看门狗中断
+        }
+        if(Timer_1s_Task==1)   //1s扫描一次
+        {
+            Timer_1s_Task=0;
+            LED2_TOGGLE;
+        }
     }
 
 }

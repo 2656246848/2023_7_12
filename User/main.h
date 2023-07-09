@@ -21,12 +21,10 @@
 #include "speed.h"
 #include "uart.h"
 #include "PID.h"
-
-extern POSSPEED qep_posspeed;
-extern PID speed_pid;
+#include "watchdog.h"
 
 #define FLASH_RUN 1
 #define SRAM_RUN 2
-#define RUN_TYPE SRAM_RUN
+#define RUN_TYPE 2
 
 #endif /* USER_MAIN_H_ */

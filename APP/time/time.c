@@ -1,17 +1,16 @@
-/*
- * time.c
- *
- *  Created on: 2018-1-24
- *      Author: Administrator
- */
-
-
 #include "time.h"
 #include "leds.h"
 
 //定时器1初始化函数
 //Freq：CPU时钟频率（150MHz）
 //Period：定时周期值，单位us
+/*********定时器1任务变量************/
+Uint32 Systime=0;
+unsigned int Timer_10ms_Task;
+unsigned int Timer_50ms_Task;
+unsigned int Timer_100ms_Task;
+unsigned int Timer_1s_Task;
+
 void TIM1_Init(float Freq, float Period)
 {
     EALLOW;
@@ -53,10 +52,19 @@ void TIM1_Init(float Freq, float Period)
 interrupt void TIM1_IRQn(void)
 {
     EALLOW;
-    LED1_TOGGLE;
-    ConfigCpuTimer(&CpuTimer1, 150, 6.6858);
-    CpuTimer1Regs.TCR.bit.TSS=0;
+    Systime++;
+    if(Systime%10==0)
+        Timer_10ms_Task=1;
+    if(Systime%50==0)
+        Timer_50ms_Task=1;
+    if(Systime%100==0)
+        Timer_100ms_Task=1;
+    if(Systime%1000==0)
+        Timer_1s_Task=1;
+    if(Systime>=8000000) Systime=0;
 
+    //LED2_TOGGLE;
+    CpuTimer1Regs.TCR.bit.TSS=0;//启动定时器
     EDIS;
 }
 
