@@ -8,6 +8,9 @@
 #include "PID.h"
 #include "leds.h"
 
+
+volatile Uint16 va = 0;//(最大15000)
+volatile Uint16 va2 = 0;//(最大15000)
 //int interrupt_count;
 //定时器2初始化函数
 //Freq：CPU时钟频率（150MHz）

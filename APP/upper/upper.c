@@ -3,6 +3,8 @@
 __interrupt void serialRxISR(void);
 unsigned char recive_buffer[13];
 Uint16 P_value,I_value,D_value;
+WAVEFORM waveform;
+WAVEFORM* waveformPtr = &waveform;
 
 /*------------------------------重定向------------------------------------------*/
 int fputc(int ch,FILE *fp)
@@ -24,6 +26,46 @@ int fputs(const char *_ptr,FILE *_fp)
     return len;
 }
 
+/*--------------------------------匿名上位机------------------------------------------*/
+
+/*
+    * @name  UART_Debug
+    * @brief  以匿名协议的传输数据给上位机，在设置变量时候一定要调成int_16形式。
+    * @param  这个是只对float变量写的，要求有3个变量speed_pid.pv,speed_pid.SEK,speed_pid.sv。
+    * @retval None
+    * 实现了s%,d%的打印
+*/
+void NIMING_Debug(PID *pp)
+ {
+    static int tempData_NM[14] = {0xAB,0xFE,0x05,0xF1,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+    waveformPtr->p = pp;
+    int sumcheck=0;
+    int addcheck=0;
+    int flen = tempData_NM[4]+tempData_NM[5]*256;
+    tempData_NM[6] =((short)((waveformPtr->p->pv))&0xFF);
+    tempData_NM[7] =((short)((waveformPtr->p->pv))>>8);
+    tempData_NM[8] =((short)((waveformPtr->p->sv))&0xFF);
+    tempData_NM[9] = ((short)((waveformPtr->p->sv))>>8);
+    tempData_NM[10] =((short)((waveformPtr->p->OUT))&0xFF);
+    tempData_NM[11] =((short)((waveformPtr->p->OUT))>>8);
+
+     unsigned int i;
+
+      for(i=0;i<(flen+6);i++)
+       {
+         sumcheck+=tempData_NM[i];
+         addcheck+=sumcheck;
+       }
+       tempData_NM[12]=(int)sumcheck;
+       tempData_NM[13]=(int)addcheck;
+
+       for(i=0;i<14;i++)
+         {
+           UARTa_SendByte(tempData_NM[i]);
+         }
+
+
+ }
 /*--------------------------------scia函数-------------------------------------------*/
 void UARTa_Init(Uint32 baud)
 {

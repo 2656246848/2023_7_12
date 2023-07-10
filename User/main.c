@@ -1,9 +1,6 @@
 #include "main.h"
 #include "INIT.h"
 
-volatile Uint16 va = 0;//(最大15000)
-volatile Uint16 va2 = 0;//(最大15000)
-
 void main()
  {
     #if RUN_TYPE==FLASH_RUN
@@ -36,8 +33,13 @@ void main()
         if(Timer_10ms_Task==1) //10ms扫描一次
         {
             Timer_10ms_Task=0;
-            //printf("%d,%d,%d,%d\n",(int)(speed_pid.pv),(int)speed_pid.sv,(int)speed_pid.OUT,va);
-            printf("%d,%d,%d,%d\n",(int)(speed_pid2.pv),(int)speed_pid2.sv,(int)speed_pid2.OUT,va2);
+            #if PC_Communication_Mode == VOFA
+                //printf("%d,%d,%d,%d\n",(int)(speed_pid.pv),(int)speed_pid.sv,(int)speed_pid.OUT,va);
+                printf("%d,%d,%d,%d\n",(int)(speed_pid2.pv),(int)speed_pid2.sv,(int)speed_pid2.OUT,va2);
+            #endif
+            #if PC_Communication_Mode==NIMING
+                NIMING_Debug(&speed_pid2);//目前是打印.pv .sv .OUT
+            #endif
         }
         if(Timer_50ms_Task==1) //50ms扫描一次
         {
