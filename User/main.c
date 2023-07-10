@@ -12,7 +12,7 @@ void main()
     #endif
     SYSTERM_INIT();
 
-    if(1)
+    if(0)
     {
         OLED_DisShowCHinese(56,5,2);
         OLED_DisShowCHinese(74,5,3);
@@ -28,7 +28,7 @@ void main()
     #if RUN_TYPE==SRAM_RUN
         // Õý³£
         printf("Hello World\n");
-
+        //PID_Change(ReceivedChar);
     #endif
 
     while (1)

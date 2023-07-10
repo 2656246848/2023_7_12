@@ -21,6 +21,7 @@
 #include "speed.h"
 #include "uart.h"
 #include "PID.h"
+#include "upper.h"
 #include "watchdog.h"
 
 #define FLASH_RUN 1

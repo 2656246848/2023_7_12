@@ -50,6 +50,7 @@
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/User}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/PID}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/recive}"/>
+									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/upper}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/anonymity}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/watchdog}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/EXTI}"/>

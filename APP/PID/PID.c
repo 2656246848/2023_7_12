@@ -7,28 +7,19 @@
 
 #include "PID.h"
 
-PID speed_pid;
+PID speed_pid1;
 PID speed_pid2;
+//初始化参数
+PIDConstants pidParams1 = {0.06f, 0.0f, 0.0f};
+PIDConstants pidParams2 = {0.06f, 0.0f, 0.0f};
 
-void PID_Init(PID *p)
+void PID_Init(PID *p,PIDConstants *p2,float Set_speed)
 {
-    p->sv=1500.0f;    //150r/min
+    p->sv=Set_speed;    //150r/min
     p->pv=0.0f;
-    p->Kp=P;
-    p->Ki=I;
-    p->Kd=D;
-    p->EK=0.0f;
-    p->Last_EK=0.0f;
-    p->SEK=0;
-}
-
-void PID2_Init(PID *p)
-{
-    p->sv=1500.0f;    //150r/min
-    p->pv=0.0f;
-    p->Kp=P2;
-    p->Ki=I2;
-    p->Kd=D2;
+    p->Kp=p2->P;
+    p->Ki=p2->I;
+    p->Kd=p2->D;
     p->EK=0.0f;
     p->Last_EK=0.0f;
     p->SEK=0;

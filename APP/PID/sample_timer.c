@@ -54,14 +54,14 @@ void TIM2_Init(float Freq, float Period)
 interrupt void TIM2_IRQn(void)
 {
     EALLOW;
-    Get_speed(&speed_pid, &qep_posspeed);
+    Get_speed(&speed_pid1, &qep_posspeed);
     Get_speed(&speed_pid2, &qep_posspeed2);
-    PID_Calc(&speed_pid);
+    PID_Calc(&speed_pid1);
     PID_Calc(&speed_pid2);
 
-    if (speed_pid.OUT<SP*2/3)//限制最大占空比
+    if (speed_pid1.OUT<SP*2/3)//限制最大占空比
     {
-        va += speed_pid.OUT;
+        va += speed_pid1.OUT;
     }
     if (speed_pid2.OUT<SP*2/3)//限制最大占空比
    {

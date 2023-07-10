@@ -4,14 +4,13 @@
 #include "eqep.h"
 #include "speed.h"
 
-/*PID参数相关宏*/
-#define     P               0.06f        //2.5
-#define     I               0.0f        //0
-#define     D               0.0f        //0
-
-#define     P2               0.06f        //2.5
-#define     I2               0.0f        //0
-#define     D2               0.0f        //0
+/*参数*/
+typedef struct
+{
+    float P;
+    float I;
+    float D;
+} PIDConstants;
 
 /*PID结构体*/
 typedef struct
@@ -29,11 +28,12 @@ typedef struct
 
 }PID;
 
-extern PID speed_pid;
+extern PID speed_pid1;
 extern PID speed_pid2;
+extern PIDConstants pidParams1;
+extern PIDConstants pidParams2;
 
-void PID_Init();
-void PID2_Init();
+void PID_Init(PID *p,PIDConstants *p2,float Set_speed);
 float Get_speed(PID *p,POSSPEED *p2);
 float Get_speed2(PID *p,POSSPEED *p2);
 void PID_Calc(PID *p);
