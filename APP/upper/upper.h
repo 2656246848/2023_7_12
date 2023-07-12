@@ -16,10 +16,10 @@
 typedef struct{
     PID* p;
 }WAVEFORM;
-
+static int tempData_NM[14] = {0xAB,0xFE,0x05,0xF1,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
 extern WAVEFORM waveform;
 
-void NIMING_Debug(PID *pp);
+void NIMING_Debug(float a,float b,float c);
 void PID_Change(unsigned char ucData,PIDConstants* p);
 void SCIa_SendByte(int dat);
 void UARTa_Init(Uint32 baud);

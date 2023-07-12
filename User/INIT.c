@@ -26,5 +26,7 @@ void SYSTERM_INIT()
     TIM2_Init(150,sampling_T*1.2-1);
     PID_Init(&speed_pid1,&pidParams1,1500.0f);
     PID_Init(&speed_pid2,&pidParams2,1500.0f);
+    MPU6050_Init();//这个放在MPU_Initial();前面
+    MPU_Initial();
     WatchDog_init();
 }

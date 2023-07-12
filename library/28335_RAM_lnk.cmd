@@ -77,7 +77,6 @@
          if required to create a larger memory block.
 */
 
-
 MEMORY
 {
 PAGE 0 :

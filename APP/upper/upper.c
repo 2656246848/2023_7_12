@@ -1,5 +1,7 @@
 #include "upper.h"
-
+//#include <stdio.h>
+//#include "stdlib.h"
+//#include <stddef.h>
 __interrupt void serialRxISR(void);
 unsigned char recive_buffer[13];
 Uint16 P_value,I_value,D_value;
@@ -31,23 +33,21 @@ int fputs(const char *_ptr,FILE *_fp)
 /*
     * @name  UART_Debug
     * @brief  以匿名协议的传输数据给上位机，在设置变量时候一定要调成int_16形式。
-    * @param  这个是只对float变量写的，要求有3个变量speed_pid.pv,speed_pid.SEK,speed_pid.sv。
+    * @param  这个是只对float变量写的，要求有3个变量
     * @retval None
     * 实现了s%,d%的打印
 */
-void NIMING_Debug(PID *pp)
+void NIMING_Debug(float a,float b,float c)
  {
-    static int tempData_NM[14] = {0xAB,0xFE,0x05,0xF1,0x06,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
-    waveformPtr->p = pp;
     int sumcheck=0;
     int addcheck=0;
     int flen = tempData_NM[4]+tempData_NM[5]*256;
-    tempData_NM[6] =((short)((waveformPtr->p->pv))&0xFF);
-    tempData_NM[7] =((short)((waveformPtr->p->pv))>>8);
-    tempData_NM[8] =((short)((waveformPtr->p->sv))&0xFF);
-    tempData_NM[9] = ((short)((waveformPtr->p->sv))>>8);
-    tempData_NM[10] =((short)((waveformPtr->p->OUT))&0xFF);
-    tempData_NM[11] =((short)((waveformPtr->p->OUT))>>8);
+    tempData_NM[6] =((short)((a))&0xFF);
+    tempData_NM[7] =((short)((a))>>8);
+    tempData_NM[8] =((short)((b))&0xFF);
+    tempData_NM[9] = ((short)((b))>>8);
+    tempData_NM[10] =((short)((c))&0xFF);
+    tempData_NM[11] =((short)((c))>>8);
 
      unsigned int i;
 
@@ -63,7 +63,6 @@ void NIMING_Debug(PID *pp)
          {
            UARTa_SendByte(tempData_NM[i]);
          }
-
 
  }
 /*--------------------------------scia函数-------------------------------------------*/

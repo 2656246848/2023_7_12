@@ -1,5 +1,8 @@
 #include "main.h"
 #include "INIT.h"
+#include "stdlib.h"
+
+int16 AX, AY, AZ, GX, GY, GZ;
 
 void main()
  {
@@ -30,6 +33,10 @@ void main()
 
     while (1)
     {
+        if(Timer_4ms_Task==1)
+        {
+            MPU_RUN_CIRCULATION();
+        }
         if(Timer_10ms_Task==1) //10ms扫描一次
         {
             Timer_10ms_Task=0;
@@ -38,7 +45,7 @@ void main()
                 printf("%d,%d,%d,%d\n",(int)(speed_pid2.pv),(int)speed_pid2.sv,(int)speed_pid2.OUT,va2);
             #endif
             #if PC_Communication_Mode==NIMING
-                NIMING_Debug(&speed_pid2);//目前是打印.pv .sv .OUT
+                NIMING_Debug(speed_pid2.pv,speed_pid2.sv,speed_pid2.OUT);
             #endif
         }
         if(Timer_50ms_Task==1) //50ms扫描一次

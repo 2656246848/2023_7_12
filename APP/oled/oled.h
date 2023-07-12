@@ -18,11 +18,11 @@
 #define u32 Uint32
 //-----------------OLED IIC¶Ë¿Ú¶¨Òå----------------
 
-#define OLED_SCLK_Clr() GpioDataRegs.GPBCLEAR.bit.GPIO32=1;
-#define OLED_SCLK_Set() GpioDataRegs.GPBSET.bit.GPIO32=1;
+#define OLED_SCLK_Clr() GpioDataRegs.GPBCLEAR.bit.GPIO41=1;
+#define OLED_SCLK_Set() GpioDataRegs.GPBSET.bit.GPIO41=1;
 
-#define OLED_SDIN_Clr() GpioDataRegs.GPBCLEAR.bit.GPIO33=1;
-#define OLED_SDIN_Set() GpioDataRegs.GPBSET.bit.GPIO33=1;
+#define OLED_SDIN_Clr() GpioDataRegs.GPBCLEAR.bit.GPIO42=1;
+#define OLED_SDIN_Set() GpioDataRegs.GPBSET.bit.GPIO42=1;
 
 
 #define OLED_CMD  0 //Ð´ÃüÁî

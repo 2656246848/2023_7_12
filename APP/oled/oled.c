@@ -338,15 +338,15 @@ void OLED_Init(void)
 {
     EALLOW;
     SysCtrlRegs.PCLKCR3.bit.GPIOINENCLK = 1;//set pull-up resistor
-    GpioCtrlRegs.GPBPUD.bit.GPIO32 = 0;     //
-    GpioCtrlRegs.GPBDIR.bit.GPIO32 = 1;     //
-    GpioCtrlRegs.GPBMUX1.bit.GPIO32 = 0;    //
-    GpioCtrlRegs.GPBQSEL1.bit.GPIO32 = 3;   //
+    GpioCtrlRegs.GPBPUD.bit.GPIO41 = 0;     //
+    GpioCtrlRegs.GPBDIR.bit.GPIO41 = 1;     //
+    GpioCtrlRegs.GPBMUX1.bit.GPIO41 = 0;    //
+    GpioCtrlRegs.GPBQSEL1.bit.GPIO41 = 3;   //
 
-    GpioCtrlRegs.GPBPUD.bit.GPIO33 = 0;     //
-    GpioCtrlRegs.GPBDIR.bit.GPIO33 = 1;     //
-    GpioCtrlRegs.GPBMUX1.bit.GPIO33 = 0;    //
-    GpioCtrlRegs.GPBQSEL1.bit.GPIO33 = 3;   //
+    GpioCtrlRegs.GPBPUD.bit.GPIO42 = 0;     //
+    GpioCtrlRegs.GPBDIR.bit.GPIO42 = 1;     //
+    GpioCtrlRegs.GPBMUX1.bit.GPIO42 = 0;    //
+    GpioCtrlRegs.GPBQSEL1.bit.GPIO42 = 3;   //
     EDIS;
 
 
