@@ -6,7 +6,7 @@
 //Period：定时周期值，单位us
 /*********定时器1任务变量************/
 Uint32 Systime=0;
-unsigned int Timer_4ms_Task;
+unsigned int Timer_5ms_Task;
 unsigned int Timer_10ms_Task;
 unsigned int Timer_50ms_Task;
 unsigned int Timer_100ms_Task;
@@ -54,8 +54,8 @@ interrupt void TIM1_IRQn(void)
 {
     EALLOW;
     Systime++;
-    if(Systime%4==0)
-        Timer_4ms_Task=1;
+    if(Systime%5==0)
+        Timer_5ms_Task=1;
     if(Systime%10==0)
         Timer_10ms_Task=1;
     if(Systime%50==0)

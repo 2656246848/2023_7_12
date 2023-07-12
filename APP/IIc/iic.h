@@ -30,9 +30,8 @@ __interrupt void i2c_int1a_isr(void);
 extern struct I2CMSG *CurrentMsgPtr;
 extern struct I2CMSG I2cMsgOut1;
 extern struct I2CMSG I2cMsgIn1;
-extern Uint8 databuffer[I2C_RNUMBYTES];  //暂存传感器8位数据；
+extern Uint8 databuffer[I2C_RNUMBYTES];  //暂存传感器14个数据；
 extern Uint16 PassCount; //跳过的次数统计
 extern Uint16 FailCount; //失败统计
-extern Uint16 Sys_stat;
 
 #endif /* APP_IIC_IIC_H_ */

@@ -5,7 +5,7 @@
 #include "DSP2833x_Device.h"     // DSP2833x 头文件
 #include "DSP2833x_Examples.h"   // DSP2833x 例子相关头文件
 
-extern unsigned int Timer_4ms_Task;
+extern unsigned int Timer_5ms_Task;
 extern unsigned int Timer_10ms_Task;
 extern unsigned int Timer_50ms_Task;
 extern unsigned int Timer_100ms_Task;

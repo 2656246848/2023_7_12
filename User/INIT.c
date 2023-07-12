@@ -27,6 +27,6 @@ void SYSTERM_INIT()
     PID_Init(&speed_pid1,&pidParams1,1500.0f);
     PID_Init(&speed_pid2,&pidParams2,1500.0f);
     MPU6050_Init();//这个放在MPU_Initial();前面
-    MPU_Initial();
+    //MPU_Initial();
     WatchDog_init();
 }

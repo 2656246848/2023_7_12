@@ -16,18 +16,8 @@ struct I2CMSG *CurrentMsgPtr;       // Used in interrupts 当前消息指针
 
 Uint16 PassCount; //跳过的次数统计
 Uint16 FailCount; //失败统计
-Uint16 Sys_stat;//发送(1) or 接收(0)
 __interrupt void i2c_int1a_isr(void);
-
-//Uint16 Rparams[Data_NUM];//data need to be read
-//Uint16 ACCEL_X;   //give their names.
-//Uint16 ACCEL_Y;
-//Uint16 ACCEL_Z;
-//Uint16 TEMP;
-//Uint16 GYRO_X;
-//Uint16 GYRO_Y;
-//Uint16 GYRO_Z;
-Uint8 databuffer[I2C_RNUMBYTES];  //暂存传感器8位数据；
+Uint8 databuffer[I2C_RNUMBYTES];  //暂存传14个感器数据；
 
 // I2C 初始化
 void I2CA_Init(void)
