@@ -51,6 +51,7 @@
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/User}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/fpu32}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/PID}"/>
+									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/Kalman}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/upper}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/IIc}"/>
 									<listOptionValue builtIn="false" value="${workspace_loc:/${ProjName}/APP/watchdog}"/>

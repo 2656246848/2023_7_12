@@ -3,9 +3,60 @@
 #include "iic.h"
 #include "DSP2833x_Device.h"     // DSP2833x Headerfile Include File
 #include "DSP2833x_Examples.h"
+#include "time.h"
+#include "kalman.h"
 
-#define MPU6050_ADDRESS     0xD0
+// MPU6050 structure
+typedef struct {
 
+    int16 Accel_X_RAW;//加速度计三轴数据
+    int16 Accel_Y_RAW;
+    int16 Accel_Z_RAW;
+    double Ax;
+    double Ay;
+    double Az;
+
+    int16 Gyro_X_RAW;//陀螺仪三轴数据
+    int16 Gyro_Y_RAW;
+    int16 Gyro_Z_RAW;
+    double Gx;
+    double Gy;
+    double Gz;
+
+    float Temperature;
+
+    double KalmanAngleX;
+    double KalmanAngleY;
+} MPU6050_t;
+
+typedef struct {    //加速度计解算出来的俯仰角和横滚角
+    double ne_sqrt;
+//    double ac_yaw;
+    double ac_roll;
+    double ac_pitch;
+}ac_angle;
+
+typedef struct {    //陀螺仪解算出来的俯仰角和横滚角
+    double gy_yaw;  //【-pi pi】
+    double gy_pitch;//【-90° ～90°】
+    double gy_roll; //【-pi pi】
+    double y_rate;  //yaw方向角速度(大地坐标系)
+    double r_rate;  //roll方向角速度
+    double p_rate;  //pitch方向角速度
+}gy_angle;
+
+void MPU_RUN_CIRCULATION();
+void MPU_Initial();
+void MPU6050_Init(void);
+void MPU6050_Read_All(MPU6050_t *DataStruct);
+void acce_calculating(MPU6050_t *DataStruct,ac_angle *a);    //得到加速度计解算的roll和pitch角
+void gyro_calculating(MPU6050_t *DataStruct,gy_angle *b, double dt); //得到陀螺仪解算的三个角
+void remove_offset(MPU6050_t *DataStruct); //计算零飘偏移量
+
+extern MPU6050_t MPU6050;
+extern gy_angle gy_angle1;
+
+//mpu6050寄存器
 #define MPU6050_SMPLRT_DIV      0x19
 #define MPU6050_CONFIG          0x1A
 #define MPU6050_GYRO_CONFIG     0x1B
@@ -77,10 +128,7 @@
 #define FIFO_COUNTL 0X73
 
 //*--------------------DMP    寄存器----------------------------------------------*/
-void MPU_RUN_CIRCULATION();
-void MPU_Initial();
-void MPU6050_Init(void);
-void MPU6050_GetData(int16 *AccX, int16 *AccY, int16 *AccZ,
-                        int16 *GyroX, int16 *GyroY, int16 *GyroZ);
+
+
 
 #endif /* APP_IIC_MPU6050_H_ */

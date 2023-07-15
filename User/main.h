@@ -25,6 +25,7 @@
 #include "watchdog.h"
 #include "iic.h"
 #include "mpu6050.h"
+#include "kalman.h"
 
 #define FLASH_RUN 1
 #define SRAM_RUN 2

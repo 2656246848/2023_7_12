@@ -2,8 +2,6 @@
 #include "INIT.h"
 #include "stdlib.h"
 
-int16 AX, AY, AZ, GX, GY, GZ;
-
 void main()
  {
     #if RUN_TYPE==FLASH_RUN
@@ -11,7 +9,6 @@ void main()
         InitFlash();
     #endif
     SYSTERM_INIT();
-
     if(0)
     {
         OLED_DisShowCHinese(56,5,2);
@@ -33,10 +30,12 @@ void main()
 
     while (1)
     {
-        if(Timer_5ms_Task==1)
-        {
-            MPU_RUN_CIRCULATION();
+        if(Timer_5ms_Task==1){
+            Timer_5ms_Task=0;
+            //MPU_RUN_CIRCULATION();
+            MPU6050_Read_All(&MPU6050);
         }
+
         if(Timer_10ms_Task==1) //10ms扫描一次
         {
             Timer_10ms_Task=0;
@@ -45,7 +44,20 @@ void main()
                 printf("%d,%d,%d,%d\n",(int)(speed_pid2.pv),(int)speed_pid2.sv,(int)speed_pid2.OUT,va2);
             #endif
             #if PC_Communication_Mode==NIMING
-                NIMING_Debug(speed_pid2.pv,speed_pid2.sv,speed_pid2.OUT);
+                float* sentdata = NULL;
+                size_t dataSize = 3;//修改发送数量
+                sentdata = (float*)malloc(dataSize * sizeof(float));
+                if (sentdata == NULL) {
+                        printf("error\n");
+                    }
+                // 修改发送内容
+                sentdata[0] = speed_pid2.pv;
+                sentdata[1] = speed_pid2.sv;
+                sentdata[2] = speed_pid2.OUT;
+                //sentdata[3] = 2.0;
+                // 调用发送数据函数
+                NIMING_Debug(sentdata,dataSize);
+                free(sentdata);// 释放动态分配的内存
             #endif
         }
         if(Timer_50ms_Task==1) //50ms扫描一次

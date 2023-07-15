@@ -3,11 +3,11 @@
 //#include "stdlib.h"
 //#include <stddef.h>
 __interrupt void serialRxISR(void);
-unsigned char recive_buffer[13];
+unsigned int recive_buffer[6];
 Uint16 P_value,I_value,D_value;
-WAVEFORM waveform;
-WAVEFORM* waveformPtr = &waveform;
+float tempData_NM[]={};//要发送上位机的数据
 
+size_t dataSize = 3; // 设置要发送的数据数量
 /*------------------------------重定向------------------------------------------*/
 int fputc(int ch,FILE *fp)
 {
@@ -35,36 +35,36 @@ int fputs(const char *_ptr,FILE *_fp)
     * @brief  以匿名协议的传输数据给上位机，在设置变量时候一定要调成int_16形式。
     * @param  这个是只对float变量写的，要求有3个变量
     * @retval None
-    * 实现了s%,d%的打印
 */
-void NIMING_Debug(float a,float b,float c)
- {
-    int sumcheck=0;
-    int addcheck=0;
-    int flen = tempData_NM[4]+tempData_NM[5]*256;
-    tempData_NM[6] =((short)((a))&0xFF);
-    tempData_NM[7] =((short)((a))>>8);
-    tempData_NM[8] =((short)((b))&0xFF);
-    tempData_NM[9] = ((short)((b))>>8);
-    tempData_NM[10] =((short)((c))&0xFF);
-    tempData_NM[11] =((short)((c))>>8);
+void NIMING_Debug(const float* data, size_t dataSize) {
+    int sumcheck = 0;
+    int addcheck = 0;
+    int flen = dataSize * 2;
+    tempData_NM[0] = 0xAB;
+    tempData_NM[1] = 0xFE;
+    tempData_NM[2] = 0x05;
+    tempData_NM[3] = 0xF1;
+    tempData_NM[4] = flen & 0xFF;
+    tempData_NM[5] = (flen >> 8) & 0xFF;
 
-     unsigned int i;
+    Uint16 i;
+    for (i = 0; i < dataSize; i++) {
+        tempData_NM[6 + i * 2] = (int)data[i] & 0xFF;
+        tempData_NM[7 + i * 2] = ((int)data[i] >> 8) & 0xFF;
+    }
 
-      for(i=0;i<(flen+6);i++)
-       {
-         sumcheck+=tempData_NM[i];
-         addcheck+=sumcheck;
-       }
-       tempData_NM[12]=(int)sumcheck;
-       tempData_NM[13]=(int)addcheck;
+    for (i = 0; i < (flen + 6); i++) {
+        sumcheck += tempData_NM[i];
+        addcheck += sumcheck;
+    }
+    tempData_NM[6 + flen] = (int)sumcheck;
+    tempData_NM[7 + flen] = (int)addcheck;
 
-       for(i=0;i<14;i++)
-         {
-           UARTa_SendByte(tempData_NM[i]);
-         }
+    for (i = 0; i < 8 + flen; i++) {
+        UARTa_SendByte(tempData_NM[i]);
+    }
+}
 
- }
 /*--------------------------------scia函数-------------------------------------------*/
 void UARTa_Init(Uint32 baud)
 {
@@ -143,12 +143,13 @@ __interrupt void serialRxISR(void)
 {
     static Uint16 Index = 0;
 
-    // 读取接收数据
+    // 读取接收数据 上位机发送 0x55 0xAB P值 I值 D值 0x02(或0x01)
     Uint16 From_UPPer = SciaRegs.SCIRXBUF.all;
     if((Index==0&&From_UPPer==HEADER_1)||
             (Index==1&&From_UPPer==HEADER_2)||
                 (Index>=2&&Index<=5))
     {
+        recive_buffer[Index] = From_UPPer;
         Index++;
     }
     else{Index=0;P_value=0;I_value=0;D_value=0;}
@@ -177,6 +178,7 @@ __interrupt void serialRxISR(void)
 
         else if(From_UPPer==0x02)
         {
+            pidParams2.P=1;
             pidParams2.P= (float)recive_buffer[2]/1000;
             pidParams2.I= (float)recive_buffer[3]/1000;
             pidParams2.D= (float)recive_buffer[4]/1000;
